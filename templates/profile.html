@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Profile
+{% endblock %}
+
+{% block main %}
+    <h3>Update Profile</h3>
+    <form action="/profile" method="post">
+        <div class="form-group">
+            <p>Username</p>
+            <input autocomplete="off" autofocus class="form-control" name="new_username" placeholder="Username" type="text" value="{{ username }}" required>
+        </div>
+        <div class="form-group">
+            <p>User Email</p>
+            <input class="form-control"  placeholder="User email" type="email" value="{{ contact }}">
+        </div>
+
+        <!--<div class="form-group">-->
+        <!--    <p>Details</p>-->
+        <!--    <textarea-->
+        <!--        class="form-control"-->
+        <!--        name="details"-->
+        <!--        rows="4"-->
+        <!--        cols="50"-->
+        <!--        placeholder="Message to send"-->
+        <!--        value="{{ details }}" >-->
+        <!--    </textarea>-->
+        <!--</div>-->
+        <p>Default Contacts</p>
+        {% for contact in contacts %}
+            <div class="form-group">
+                <input class="form-control"  placeholder="Contact email" type="email" value="{{ contact }}">
+            </div>
+        {% endfor %}
+        <p>Login</p>
+        <div class="form-group">
+            <input class="form-control" name="new-password" placeholder="New Password" type="password">
+        </div>
+        <div class="form-group">
+            <input class="form-control" name="new-confirm" placeholder="New Password (Confirm)" type="password">
+        </div>
+        <div class="form-group">
+            <input class="form-control" name="password" placeholder="Password" type="password" required>
+        </div>
+        <a href="/" class="btn btn-success">Cancel</a>
+        <button class="btn btn-danger" type="submit">Submit</button>
+    </form>
+{% endblock %}
