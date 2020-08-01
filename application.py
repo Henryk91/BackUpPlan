@@ -44,7 +44,8 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Configure CS50 Library to use SQLite database
-db_link = "sqlite:///findme.db"
+# db_link = "sqlite:///findme.db"
+db_link = "postgres://<password>:<url>/<db>"
 db = SQL(db_link)
 # db = SQL("postgres://<password>:<url>/<db>")
 
