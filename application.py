@@ -271,19 +271,6 @@ def email_contacts(to, subject, text):
     # print(x.text)
     print('Email sent')
 
-# Create stock
-def create_reminder(details, interval, reminder_name, contact):
-    stock_value = 1 #lookup(request.form.get("details"))
-    if stock_value:
-        print("Creating here")
-        # Did get a response from lookup
-        trade_msg =  make_trade(details, interval, reminder_name, 'create', contact)
-        if trade_msg:
-            return trade_msg
-        return "Added Reminder!"
-    else:
-        return
-
 # Get user data
 def get_user():
     user_id = session["user_id"]
