@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Home
+{% endblock %}
+
+{% block main %}
+    {% if message %}
+        <div class="alert alert-primary border text-center" role="alert">
+            {{ message }}
+        </div>
+    {% endif %}
+    <h3>Historic Plans </h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Start Time</th>
+                <th>Name</th>
+                <th>Time Interval</th>
+                <th>Next Expiration</th>
+                <th>Remaining Time</th>
+                <th>Notify Time</th>
+                <th>Stop Time</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <td colspan="4"></td>
+                <td><strong>{{total}}</strong></td>
+            </tr>
+        </tfoot>
+        <tbody>
+                {% for reminder in reminders %}
+                    {% if reminder['start_time']  %}
+                            <tr>
+                                <td>{{ reminder['start_time'] }}</td>
+                                <td>{{ reminder['name'] }}</td>
+                                <td>{{ reminder['interval'] }} min</td>
+                                <td>{{ reminder['next_expiration'] }}</td>
+                                {% if reminder['runout']  %}
+                                    <td style="color:red;">{{ reminder['remaining_time'] }} Late</td>
+                                {% else  %}
+                                    <td>{{ reminder['remaining_time'] }}</td>
+                                {% endif %}
+                                <td>{{ reminder['notify_time'] }}</td>
+                                <td>{{ reminder['end_time'] }}</td>
+                            <td>
+                                <a href="/plan?id={{ reminder['id'] }}">Details</a><br />
+                                <a href="/plan?reuse={{ reminder['id'] }}">Reuse</a><br />
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

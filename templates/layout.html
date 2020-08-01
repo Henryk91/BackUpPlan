@@ -20,7 +20,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
 
-        <title>Back Up Plan: {% block title %}{% endblock %}</title>
+        <title>BackUpPlan: {% block title %}{% endblock %}</title>
 
     </head>
 
@@ -28,7 +28,7 @@
 
         <nav class="navbar navbar-expand-md navbar-light bg-light border">
             <a class="navbar-brand" href="/">
-                 <span class="black">Back Up Plan</span>
+                 <span class="black">BackUpPlan</span>
             </a>
             <button aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-target="#navbar" data-toggle="collapse" type="button">
                 <span class="navbar-toggler-icon"></span>
@@ -70,5 +70,33 @@
         </footer>
 
     </body>
+    <script>
+        let doc = document
+        setInterval(() => {
+
+            leadingZero = (number) => {
+                return number < 10 ? '0' + number : number;
+            }
+            let current_datetime = new Date;
+            let formatted_date = current_datetime.getFullYear() + "-"
+            + leadingZero((current_datetime.getMonth() + 1)) + "-"
+            + leadingZero(current_datetime.getDate());
+
+
+            let formatted_time = leadingZero(current_datetime.getHours()) + ":"
+            + leadingZero(current_datetime.getMinutes()) + ":"
+            + leadingZero(current_datetime.getSeconds())
+            current_date = doc.getElementById('current_date');
+            current_time = doc.getElementById('current_time');
+            if(current_date && current_time){
+                current_date.innerHTML= formatted_date;
+                current_time.innerHTML= formatted_time;
+            }
+
+        },1000)
+        
+        
+
+    </script>
 
 </html>

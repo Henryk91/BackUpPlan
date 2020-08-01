@@ -49,3 +49,48 @@ main img
   /* Capitalise first letter of trade type*/
   text-transform: capitalize;
 }
+
+.date{
+    font-size: 15px;
+     /*border: 1px solid red;*/
+}
+
+.time-box{
+    /* center form controls */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    /*border: 1px solid green;*/
+}
+.name-box{
+    display: flex;
+    flex-direction: row;
+    height: fit-content;
+    justify-content: center;
+    /*border: 1px solid black;*/
+}
+.plan-box{
+    text-align: left;
+    border-bottom: 1px solid black;
+    margin-bottom: 20px;
+    padding: 5px;
+}
+.time-box1{
+    border: 1px solid red;
+}
+
+.plan-buttons{
+    text-align: center;
+    margin: 10px;
+}
+
+.plan-header{
+    padding: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid black;
+    border: 1px solid black;
+}
+.remaining-time{
+    font-size: 20px;
+}

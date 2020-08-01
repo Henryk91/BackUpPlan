@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Buy
+    Plan
 {% endblock %}
 
 {% block main %}
@@ -12,15 +12,15 @@
         {% if reminder_id %}
         <div class="form-group">
             <p>Reminder ID</p>
-            <input class="form-control" type="text" name="reminder_id" value="{{ reminder_id }}">
+            <input class="form-control" type="text" name="reminder_id" value="{{ reminder_id }}" readonly>
         </div>
         {% endif %}
         <div class="form-group">
-            <p>Name</p>
+            <p>Plan Name</p>
             <input class="form-control"  placeholder="Name" type="text" name="name" value="{{ name }}">
         </div>
         <div class="form-group">
-            <p>Details</p>
+            <p>Message</p>
             <textarea
                 class="form-control"
                 name="details"
@@ -37,28 +37,28 @@
         <div class="form-group">
             <input class="form-control" name="interval" type="number" min="1" placeholder="Time Interval (min)" value="{{ interval }}">
         </div>
+        <a href="/">
+            <button class="btn btn-primary" type="button">
+                {% if reminder_id %}
+                    Back
+                {% else %}
+                    Cancel
+                {% endif %}
+            </button>
+        </a>
+        <button class="btn btn-warning" type="submit">
+        {% if reminder_id %}
+            Update
+        {% else %}
+            Create
+        {% endif %}
+        </button>
         {% if reminder_id %}
         <a href="/?stop={{ reminder_id }}">
-            <button class="btn btn-primary" type="button">
+            <button class="btn btn-danger" type="button">
                 Stop
             </button>
         </a>
         {% endif %}
-        <a href="/?stop={{ reminder_id }}">
-            <button class="btn btn-danger" type="button">
-                {% if reminder_id %}
-                    Back
-                {% else %}
-                    Cancel Reminder
-                {% endif %}
-            </button>
-        </a>
-        <button class="btn btn-primary" type="submit">
-        {% if reminder_id %}
-            Update
-        {% else %}
-            Create Reminder
-        {% endif %}
-        </button>
     </form>
 {% endblock %}

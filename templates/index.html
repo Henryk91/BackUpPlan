@@ -5,63 +5,111 @@
 {% endblock %}
 
 {% block main %}
+
     {% if message %}
         <div class="alert alert-primary border text-center" role="alert">
             {{ message }}
         </div>
     {% endif %}
-    <h3>Currrent Time: {{ time_now }} </h3>
-    <h3>Active Plans</h3>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Start Time</th>
-                <th>Name</th>
-                <th>Time Interval</th>
-                <th>Next Expiration</th>
-                <th>Remaining Time</th>
-                <th>Notify Time</th>
-                <th>Stop Time</th>
-                <th><a href="/">Reload Time</a></th>
-                {% if reminders[0]['share_count']  %}
-                    <th>Other</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tfoot>
-            <tr>
-                <td colspan="4"></td>
-                <td><strong>{{total}}</strong></td>
-            </tr>
-        </tfoot>
-        <tbody>
-                {% for reminder in reminders %}
-                    {% if reminder['start_time']  %}
-                            <tr>
-                                <td>{{ reminder['start_time'] }}</td>
-                                <td>{{ reminder['name'] }}</td>
-                                <td>{{ reminder['interval'] }} min</td>
-                                <td>{{ reminder['next_expiration'] }}</td>
-                                {% if reminder['runout']  %}
-                                    <td style="color:red;">{{ reminder['remaining_time'] }} Late</td>
-                                {% else  %}
-                                    <td>{{ reminder['remaining_time'] }}</td>
-                                {% endif %}
-                                <td>{{ reminder['notify_time'] }}</td>
-                                <td>{{ reminder['end_time'] }}</td>
-                            <td>
-                                <a href="/plan?id={{ reminder['id'] }}">Details</a><br />
-                                {% if reminder['end_time'] == None  %}
-                                    {% if reminder['notify_time'] == None  %}
-                                        <a href="/?checkin={{ reminder['id'] }}">Check in</a><br />
-                                    {% endif  %}
-                                    <a href="/?stop={{ reminder['id'] }}">Stop</a><br />
-                                {% endif  %}
+    <div class="plan-header">
+        <span><h3>Active Plans</h3></span>
+        <p>
+            <span class="date1" id="current_date"></span>
+            <span class="date1" id="current_time"></span>
+        </p>
+        <a href="/">
+            <button class="btn btn-success" type="button">
+                Refresh
+            </button>
+        </a>
 
-                            </td>
-                        </tr>
-                    {% endif %}
-                {% endfor %}
-        </tbody>
-    </table>
+    </div>
+        {% for reminder in reminders %}
+            {% if reminder['start_time']  %}
+                <div class="plan-box">
+                    <div><strong>Name:</strong> {{ reminder['name'] }}</div>
+                    <div>
+                        {% if reminder['runout']  %}
+                            <div ><strong>Remaining:</strong> <span class='remaining-time' style="color:red;">{{ reminder['remaining_time'] }}</span> Late</div>
+                        {% else  %}
+                            <div><strong>Remaining:</strong> <span class='remaining-time'>{{ reminder['remaining_time'] }}</span></div>
+                        {% endif %}
+                        <div><strong>Interval:</strong> {{ reminder['interval'] }} min</div>
+                        <div><strong>Start:</strong> {{ reminder['start_time'] }}</div>
+                        <div><strong>Expire:</strong> <span class='expire-time'>{{ reminder['next_expiration'] }}</span></div>
+
+                        <div><strong>Notification:</strong> {{ reminder['notify_time'] }}</div>
+                        <div><strong>End:</strong> {{ reminder['end_time'] }}</div>
+                    </div>
+                    <br />
+                    <div class="plan-buttons">
+                        <a href="/plan?id={{ reminder['id'] }}">
+                            <button class="btn btn-primary" type="button">
+                                Details
+                            </button>
+                        </a>
+                        {% if reminder['end_time'] == None  %}
+                            {% if reminder['notify_time'] == None  %}
+                                <a href="/?checkin={{ reminder['id'] }}">
+                                    <button class="btn btn-warning" type="button">
+                                        Check in
+                                    </button>
+                                </a>
+                            {% endif  %}
+                            <a href="/?stop={{ reminder['id'] }}">
+                                <button class="btn btn-danger" type="button">
+                                    Stop
+                                </button>
+                            </a>
+                        {% endif  %}
+                    </div>
+                    <br />
+                </div>
+            {% else %}
+                <a href="/plan">
+                    <button class="btn btn-primary" type="button">
+                        New Plan
+                    </button>
+                </a>
+                <a href="/history">
+                    <button class="btn btn-primary" type="button">
+                        History
+                    </button>
+                </a>
+            {% endif %}
+        {% endfor %}
+
+
+        <script>
+            setTimeout(() => {
+                milisToTime = (ms) => {
+                    return new Date(ms).toISOString().substring(11,19);
+                };
+                let expired = document.getElementsByClassName('expire-time');
+                let remaining = document.getElementsByClassName('remaining-time');
+
+                dateStringToIsoString = (date) => {
+                    date = date.replace(' ', 'T');
+
+                    return date + '.000Z';
+                };
+                if(expired && remaining){
+                    setInterval(() => {
+                        for(let i = 0; i < expired.length; i++){
+                            let item = expired[i];
+                            let expireDate = new Date(dateStringToIsoString(item.textContent));
+
+                            let isoDate = new Date();
+                            let miliSeconds = (expireDate - isoDate);
+                            let remainingTime = milisToTime(miliSeconds);
+
+                            let remainingElement = remaining[i];
+                            remainingElement.innerHTML = remainingTime;
+                        }
+                    },1000);
+                }
+            },100)
+
+        </script>
+
 {% endblock %}

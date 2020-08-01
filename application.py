@@ -252,7 +252,7 @@ def test_email():
     # https://henryk91-note.herokuapp.com/api/email
     url = 'https://henryk91-note.herokuapp.com/api/emails'
     # myobj = {'email': 'bob@mailinator.com', 'text' : 'FFs Message missing.'}
-    myobj = {'from': 'live@henryk.co.za', 'to': ['henry@mailinator.com', 'bob@mailinator.com'], 'subject': 'Live Switch', 'text': 'FFs Message missing.'}
+    myobj = {'from': 'live@henryk.co.za', 'to': ['henry@mailinator.com', 'bob@mailinator.com'], 'subject': 'BackUpPlan Alert', 'text': 'FFs Message missing.'}
     x = requests.post(url, data = myobj)
     #print the response text (the content of the requested file):
     print(x.text)
@@ -360,7 +360,7 @@ def get_user_reminders():
             return [{'details': '', 'interval': 0}]
     else:
         # Sort by latest first
-        rows.sort(key = lambda x: datetime.datetime.strptime(x['start_time'], '%Y-%m-%d %H:%M:%S'))
+        rows.sort(key = lambda x: datetime.datetime.strptime(x['start_time'], '%Y-%m-%d %H:%M:%S'), reverse=True)
         return create_remaining_time(rows)
 
 # Adding remaining time to reminder
@@ -403,6 +403,17 @@ def get_reminder_by_id_with_sql_create(reminder_id):
     else:
         return rows[0]
 
+# get reminder by name and user_id
+def get_reminder_by_name(reminder_name, user_id):
+    global db_link
+    db = SQL(db_link)
+
+    rows = db.execute("SELECT * FROM reminders WHERE name = :reminder_name AND user_id = := user_id;", reminder_name=reminder_name, user_id= user_id)
+    if len(rows) <= 0:
+            return [{'details': '', 'interval': 0}]
+    else:
+        return rows[0]
+
 # get reminder by id withouth user check for use on notify. (recreating db as function is called in seperate thread)
 def get_user_by_id_with_sql_create(user_id):
     global db_link
@@ -421,9 +432,11 @@ def create_user_reminder(reminder_name, details, user_id, interval, contacts):
     current_date_and_time = datetime.datetime.now()
     minutes_added = datetime.timedelta(minutes = interval)
     next_expiration = current_date_and_time + minutes_added
-
+    next_expiration = next_expiration.strftime("%Y-%m-%d %H:%M:%S")
     # insert into reminders
-    db.execute("INSERT INTO reminders (name, details, user_id, interval, start_time, next_expiration, contacts) VALUES (:name, :details, :user_id, :interval, :start_time, :next_expiration, :contacts)", name=reminder_name  ,details=details,user_id=user_id, interval=interval, start_time=current_date_and_time, next_expiration=next_expiration, contacts=contacts)
+    reminder_id = db.execute("INSERT INTO reminders (name, details, user_id, interval, start_time, next_expiration, contacts) VALUES (:name, :details, :user_id, :interval, :start_time, :next_expiration, :contacts)", name=reminder_name  ,details=details,user_id=user_id, interval=interval, start_time=current_date_and_time, next_expiration=next_expiration, contacts=contacts)
+    print('Insert Responce',reminder_id)
+    reminder_timer_update(next_expiration, reminder_id, True)
 
     return 'Reminder created'
 # update reminders
@@ -498,8 +511,9 @@ def reminder_timer_update(next_expiration, reminder_id, add_remove):
           "next_expiration": next_expiration
         }
         if len(reminder_timer_array) < 1:
-            print('Adding to timer array reminder with id: ', reminder_id)
+            print('Adding first item to timer array reminder with id: ', reminder_id)
             reminder_timer_array = [timer]
+            timer_engine()
         else:
             print('Adding to timer array reminder with id: ', reminder_id)
             reminder_timer_array = reminder_timer_array + [timer]
@@ -544,6 +558,8 @@ def set_reminder_notify_time(reminder_id):
     notify_time = datetime.datetime.now()
     # Notify time query
     print('Setting notify time for reminder with id:', reminder_id)
+    global db_link
+    db = SQL(db_link)
     db.execute("UPDATE reminders SET notify_time=:notify_time WHERE id=:reminder_id", notify_time=notify_time, reminder_id=reminder_id)
 
 # Notifiy contacts
@@ -570,7 +586,7 @@ def notify_reminder_contacts(timer_reminder):
         contacts = [contacts]
 
     # send notification
-    email_contacts(contacts, 'Live Switch', text)
+    email_contacts(contacts, 'BackUpPlan Alert', text)
     set_reminder_notify_time(reminder_id)
 
 # process expired reminder
@@ -603,7 +619,8 @@ def reminders_late_check():
 # Runs function and calls reminder timer again
 def timer_engine():
     reminders_late_check()
-    threading.Timer(5.0, timer_engine).start()
+    if len(reminder_timer_array) > 0:
+        threading.Timer(5.0, timer_engine).start()
 
 @app.before_first_request
 def initialize():
