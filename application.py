@@ -361,7 +361,7 @@ def get_user_reminders():
             return [{'details': '', 'interval': 0}]
     else:
         # Sort by latest first
-        rows.sort(key = lambda x: datetime.datetime.strptime(x['start_time'], '%Y-%m-%d %H:%M:%S'), reverse=True)
+        rows.sort(key = lambda x: datetime.datetime.strptime(str(x['start_time']), '%Y-%m-%d %H:%M:%S'), reverse=True)
         return create_remaining_time(rows)
 
 # Adding remaining time to reminder
