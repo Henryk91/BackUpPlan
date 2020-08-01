@@ -339,7 +339,7 @@ def get_timer_reminders():
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
-        rows.sort(key = lambda x: datetime.datetime.strptime(x['next_expiration'], '%Y-%m-%d %H:%M:%S'))
+        rows.sort(key = lambda x: datetime.datetime.strptime(str(x['next_expiration']), '%Y-%m-%d %H:%M:%S'))
         reminder_timer_array = rows
 
 # get user active reminders
@@ -350,7 +350,7 @@ def get_user_active_reminders():
             return [{'details': '', 'interval': 0}]
     else:
         # Sort by latest first
-        rows.sort(key = lambda x: datetime.datetime.strptime(x['next_expiration'], '%Y-%m-%d %H:%M:%S'))
+        rows.sort(key = lambda x: datetime.datetime.strptime(str(x['next_expiration']), '%Y-%m-%d %H:%M:%S'))
         return create_remaining_time(rows)
 
 # get user reminders
@@ -369,7 +369,7 @@ def create_remaining_time(rows):
     if rows:
         for reminder in rows:
             next_expiration = reminder['next_expiration']
-            time_exp = datetime.datetime.strptime(next_expiration, '%Y-%m-%d %H:%M:%S')
+            time_exp = datetime.datetime.strptime(str(next_expiration), '%Y-%m-%d %H:%M:%S')
             time_now = datetime.datetime.now()
             remaining_time = time_exp - time_now
 
@@ -523,7 +523,7 @@ def reminder_timer_update(next_expiration, reminder_id, add_remove):
         reminder_timer_array = filter_remove(reminder_timer_array, 'reminder_id', reminder_id)
     print('')
     if len(reminder_timer_array) > 0:
-        reminder_timer_array.sort(key = lambda x: datetime.datetime.strptime(x['next_expiration'], '%Y-%m-%d %H:%M:%S'))
+        reminder_timer_array.sort(key = lambda x: datetime.datetime.strptime(str(x['next_expiration']), '%Y-%m-%d %H:%M:%S'))
         reminders_late_check()
 
 # Check if reminder has been stopped
