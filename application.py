@@ -3,7 +3,7 @@ import os
 import datetime;
 from cs50 import SQL
 from flask import Flask, flash, jsonify, redirect, render_template, request, session
-from flask_session import Session
+# from flask_session import Session
 
 from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
@@ -39,11 +39,14 @@ def after_request(response):
     return response
 
 # Configure session to use filesystem (instead of signed cookies)
-app.config["SESSION_FILE_DIR"] = mkdtemp()
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
+# app.config["SESSION_FILE_DIR"] = mkdtemp()
+# app.config["SESSION_PERMANENT"] = False
+# app.config["SESSION_TYPE"] = "filesystem"
+
+# app.SECRET_KEY =  "b_5#y2LF4Q8znxec]b_5#y2LF4Q8znxec]" #os.urandom(16) #
+app.config['SECRET_KEY'] = "b_5#y2LF4Q8znxec]b_5#y2LF4Q8znxec]" #
 # app.debug = True
-Session(app)
+# Session(app)
 
 # Configure CS50 Library to use SQLite database or Postgres
 db_link = "sqlite:///findme.db"
