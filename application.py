@@ -10,8 +10,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.dialects.postgresql import insert
 
-from helpers import apology, login_required, lookup, usd
+from helpers import apology, login_required, lookup, usd, get_db_link
 import datetime
 
 import requests
@@ -20,9 +21,6 @@ import threading
 
 import array
 
-# reminder_timer_itm = ''
-# reminder_timer_itm['next_expiration'] = '2030-07-18 17:18:20'
-# reminder_timer_itm['reminder_is'] = -1
 reminder_timer_array = []
 
 # Configure application
@@ -46,18 +44,18 @@ app.config["SESSION_TYPE"] = "filesystem"
 # app.debug = True
 Session(app)
 
-# Configure CS50 Library to use SQLite database
+# Configure CS50 Library to use SQLite database or Postgres
 db_link = "sqlite:///findme.db"
 
 db_link = "postgres://<password>:<url>/<db>"
+
+env_link = get_db_link()
+if env_link:
+    db_link = env_link
+
 db = SQL(db_link)
 
-engine = create_engine(db_link, echo=True)
-
-db = create_engine(db_link)
-# db=scoped_session(sessionmaker(bind=engine))
-
-# db = SQL("postgres://<password>:<url>/<db>")
+db_update_engine = create_engine(db_link)
 
 @app.route("/")
 @login_required
@@ -168,8 +166,8 @@ def login():
 
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = :username",
-                          username=request.form.get("username")).fetchall()
-        print('rows',rows)
+                          username=request.form.get("username"))
+
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
             return apology("invalid username and/or password", 403)
@@ -217,12 +215,15 @@ def register():
 
         # Check if user exists
         rows = db.execute("SELECT * FROM users WHERE username = :username",
-                          username=request.form.get("username")).fetchall()
+                          username=request.form.get("username"))
         if len(rows) > 0:
             return apology("Username already exists", 403)
 
         # Insert new user in database
-        db.execute("INSERT INTO users (username, hash) VALUES (:username,:hash)", username=request.form.get("username"), hash= generate_password_hash(request.form.get("password")))
+        username = request.form.get("username")
+        hashy = generate_password_hash(request.form.get("password"))
+
+        db_update("INSERT INTO users (username, hash) VALUES ('" +username+ "','" + hashy + "')")
 
         # Redirect user to Login
         return redirect("/login")
@@ -247,6 +248,13 @@ def profile():
     else:
         return render_template("profile.html", username=user['username'], contacts=contacts)
 
+def db_update(query):
+    conn = db_update_engine.connect()
+    # Begin transaction
+    trans = conn.begin()
+    result = conn.execute(query)
+    trans.commit()
+    conn.close()
 
 def errorhandler(e):
     """Handle error"""
@@ -260,16 +268,6 @@ for code in default_exceptions:
     app.errorhandler(code)(errorhandler)
 
 # test email function
-# def test_email():
-#     # https://henryk91-note.herokuapp.com/api/email
-#     url = 'https://henryk91-note.herokuapp.com/api/emails'
-#     # myobj = {'email': 'bob@mailinator.com', 'text' : 'FFs Message missing.'}
-#     myobj = {'from': 'live@henryk.co.za', 'to': ['henry@mailinator.com', 'bob@mailinator.com'], 'subject': 'Live Switch', 'text': 'FFs Message missing.'}
-#     # x = requests.post(url, data = myobj)
-#     #print the response text (the content of the requested file):
-#     print(x.text)
-
-# test email function
 def email_contacts(to, subject, text):
     print('About to send email to:', to)
     # https://henryk91-note.herokuapp.com/api/email
@@ -279,26 +277,13 @@ def email_contacts(to, subject, text):
     print('Email obj:', myobj)
     x = requests.post(url, data = myobj)
     #print the response text (the content of the requested file):
-    # print(x.text)
+    print(x.text)
     print('Email sent')
-
-# Create stock
-# def create_reminder(details, interval, reminder_name, contact):
-#     stock_value = 1 #lookup(request.form.get("details"))
-#     if stock_value:
-#         print("Creating here")
-#         # Did get a response from lookup
-#         trade_msg =  make_trade(details, interval, reminder_name, 'create', contact)
-#         if trade_msg:
-#             return trade_msg
-#         return "Added Reminder!"
-#     else:
-#         return
 
 # Get user data
 def get_user():
     user_id = session["user_id"]
-    rows = db.execute("SELECT * FROM users WHERE id = :user_id",user_id=user_id).fetchall()
+    rows = db.execute("SELECT * FROM users WHERE id = :user_id",user_id=user_id)
     if len(rows) <= 0:
             return
     else:
@@ -316,7 +301,7 @@ def update_user(request):
     new_pass = request.form.get("new-password")
     new_confirm = request.form.get("new-confirm")
 
-    user_rows = db.execute("SELECT * FROM users WHERE id = :user_id",user_id=user_id).fetchall()
+    user_rows = db.execute("SELECT * FROM users WHERE id = :user_id",user_id=user_id)
 
     # Ensure username exists and password is correct
     if len(user_rows) != 1 or not check_password_hash(user_rows[0]["hash"], request.form.get("password")):
@@ -326,8 +311,8 @@ def update_user(request):
         # Updating password
         if new_pass == new_confirm:
             # Update passwords
-            row = db.execute("UPDATE users SET username=:new_username, hash=:new_pass WHERE id = :user_id", new_username=new_username  ,user_id=user_id, new_pass=generate_password_hash(new_pass))
-
+            new_pass = generate_password_hash(new_pass)
+            db_update("UPDATE users SET username = '" +new_username+ "',  hash = '" + str(new_pass) + "' WHERE id= " + str(user_id))
             session["msg"] = 'Profile Updated!'
             return 'Profile Updated!'
         else:
@@ -335,11 +320,8 @@ def update_user(request):
             return "Passwords don't match"
     else:
         # Updating only username
-        details = 'sdddddddddddddddd'
+        db_update("UPDATE users SET username = '" +new_username+ "',  details = '" + new_detail + "' WHERE id= " + str(user_id))
 
-        # row = db.execute("UPDATE users SET username=:username, details=:details WHERE id=:user_id", username=new_username, details=details ,user_id=user_id)
-        db.execute("UPDATE users SET username=:username, details=:details WHERE id=:user_id", {"username": new_username, "details": details, "user_id": user_id})
-        db.commit()
         session["msg"] = 'Profile Updated!'
 
         return 'Profile Updated!'
@@ -348,10 +330,8 @@ def update_user(request):
 def get_timer_reminders():
     print('Loading timers from db')
     global reminder_timer_array
-    global db_link
-    # db = SQL(db_link)
 
-    rows = db.execute("SELECT next_expiration, id as reminder_id FROM reminders WHERE end_time IS NULL AND notify_time IS NULL").fetchall()
+    rows = db.execute("SELECT next_expiration, id as reminder_id FROM reminders WHERE end_time IS NULL AND notify_time IS NULL")
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -361,7 +341,7 @@ def get_timer_reminders():
 # get user active reminders
 def get_user_active_reminders():
     user_id = session["user_id"]
-    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND end_time IS NULL",user_id=user_id).fetchall()
+    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND end_time IS NULL",user_id=user_id)
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -372,7 +352,7 @@ def get_user_active_reminders():
 # get user reminders
 def get_user_reminders():
     user_id = session["user_id"]
-    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND interval > 0;",user_id=user_id).fetchall()
+    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND interval > 0;",user_id=user_id)
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -403,7 +383,7 @@ def create_remaining_time(rows):
 # get reminder by id with user check so user cant call any reminder
 def get_user_reminder_by_id(reminder_id):
     user_id = session["user_id"]
-    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND id = :reminder_id;",user_id=user_id, reminder_id=reminder_id).fetchall()
+    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND id = :reminder_id;",user_id=user_id, reminder_id=reminder_id)
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -411,10 +391,8 @@ def get_user_reminder_by_id(reminder_id):
 
 # get reminder by id withouth user check for use on notify. (recreating db as function is called in seperate thread)
 def get_reminder_by_id_with_sql_create(reminder_id):
-    global db_link
-    # db = SQL(db_link)
 
-    rows = db.execute("SELECT * FROM reminders WHERE id = " + str(reminder_id)).fetchall()
+    rows = db.execute("SELECT  * FROM reminders WHERE id = :reminder_id",reminder_id=reminder_id)
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -422,11 +400,8 @@ def get_reminder_by_id_with_sql_create(reminder_id):
 
 # get reminder by id withouth user check for use on notify. (recreating db as function is called in seperate thread)
 def get_user_by_id_with_sql_create(user_id):
-    global db_link
-    # db = SQL(db_link)
 
-    # rows = db.execute("SELECT username FROM users WHERE id = :user_id",user_id=user_id).fetchall()
-    rows = db.execute("SELECT username FROM users WHERE id = " + str(user_id)).fetchall()
+    rows = db.execute("SELECT username FROM users WHERE id = :user_id",user_id=user_id)
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -439,9 +414,16 @@ def create_user_reminder(reminder_name, details, user_id, interval, contacts):
     current_date_and_time = datetime.datetime.now()
     minutes_added = datetime.timedelta(minutes = interval)
     next_expiration = current_date_and_time + minutes_added
-
+    next_expiration = next_expiration.strftime("%Y-%m-%d %H:%M:%S")
+    current_date_and_time = current_date_and_time.strftime("%Y-%m-%d %H:%M:%S")
     # insert into reminders
-    db.execute("INSERT INTO reminders (name, details, user_id, interval, start_time, next_expiration, contacts) VALUES (:name, :details, :user_id, :interval, :start_time, :next_expiration, :contacts)", name=reminder_name  ,details=details,user_id=user_id, interval=interval, start_time=current_date_and_time, next_expiration=next_expiration, contacts=contacts)
+
+    db_update("INSERT INTO reminders (name, details, user_id, interval, start_time, next_expiration, contacts) VALUES ('" +reminder_name+ "','" + details + "','" + str(user_id) + "','" + str(interval) + "','" + str(current_date_and_time) + "','" + str(next_expiration) + "','" + contacts +"')")
+
+    rows = db.execute("SELECT  id FROM reminders WHERE name = :reminder_name AND next_expiration=:next_expiration",reminder_name=reminder_name, next_expiration=next_expiration)
+    print('ssevmoesimvoirmvoper',rows)
+    reminder_id = rows[0]['id']
+    reminder_timer_update(next_expiration , reminder_id, True)
 
     return 'Reminder created'
 # update reminders
@@ -453,23 +435,15 @@ def update_reminder_by_id(interval, details, next_expiration, contacts, name, re
     else:
         reminder_timer_update(next_expiration, reminder_id, True)
         # check if stock is in reminders
-        db.execute(
-            "UPDATE reminders SET interval=:interval, details=:details, next_expiration=:next_expiration, contacts=:contacts, name=:name WHERE id=:reminder_id",
-            interval=interval,
-            details=details,
-            next_expiration=next_expiration,
-            contacts=contacts,
-            name=name,
-            reminder_id=reminder_id
-            )
+
+        db_update("UPDATE reminders SET interval = '" +str(interval)+ "',  details = '" + details + "', next_expiration = '" + str(next_expiration)  + "', contacts = '" + contacts + "', name = '" + name +"' WHERE id= " + str(reminder_id))
 
 # checking in reminders
 def checkin_reminder(reminder_id):
     # get reminders interval
     print('Checking in on reminder:', reminder_id)
-    global db_link
-    # db = SQL(db_link)
-    rows = db.execute("SELECT interval, notify_time, end_time FROM reminders WHERE id = :reminder_id",reminder_id=reminder_id).fetchall()
+
+    rows = db.execute("SELECT interval, notify_time, end_time FROM reminders WHERE id = :reminder_id",reminder_id=reminder_id)
     if rows:
         interval = rows[0]['interval']
         notify_time = rows[0]['notify_time']
@@ -484,11 +458,7 @@ def checkin_reminder(reminder_id):
             print('Updated expiration:',next_expiration)
             reminder_timer_update(next_expiration, reminder_id, True)
 
-            db.execute(
-                "UPDATE reminders SET next_expiration=:next_expiration WHERE id=:reminder_id",
-                reminder_id=reminder_id,
-                next_expiration=next_expiration
-                )
+            db_update("UPDATE reminders SET next_expiration = '" + str(next_expiration)  + "' WHERE id= " + str(reminder_id))
 
 # dict array filter
 def filter_remove(timer_reminder_array, attribute, filter_value):
@@ -510,15 +480,15 @@ def reminder_timer_update(next_expiration, reminder_id, add_remove):
         if len(reminder_timer_array) > 0:
             reminder_timer_array = filter_remove(reminder_timer_array, 'reminder_id', reminder_id)
 
-
         timer = {
           "reminder_id": reminder_id,
           "next_expiration": next_expiration
         }
+
         if len(reminder_timer_array) < 1:
             print('Adding first item to timer array reminder with id: ', reminder_id)
             reminder_timer_array = [timer]
-            timer_engine()
+
         else:
             print('Adding to timer array reminder with id: ', reminder_id)
             reminder_timer_array = reminder_timer_array + [timer]
@@ -533,9 +503,8 @@ def reminder_timer_update(next_expiration, reminder_id, add_remove):
 # Check if reminder has been stopped
 def reminder_stop_check(reminder_id):
     print('Checking if reminder has been stopped reminder:', reminder_id)
-    global db_link
-    # db = SQL(db_link)
-    rows = db.execute("SELECT end_time FROM reminders WHERE id = :reminder_id",reminder_id=reminder_id).fetchall()
+
+    rows = db.execute("SELECT end_time FROM reminders WHERE id = :reminder_id",reminder_id=reminder_id)
     if rows:
         end_time = rows[0]['end_time']
         if end_time != None:
@@ -550,23 +519,21 @@ def stop_reminder(reminder_id):
     if reminder_stopped:
         print('Cant update stoped reminder:', reminder_id)
     else:
-        # global db_link
-        # db = SQL(db_link)
-        end_time = datetime.datetime.now()
+        end_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # Stop query
         reminder_timer_update(False, reminder_id, False)
         print('Stopping reminder with id:', reminder_id)
-        let = db.execute("UPDATE reminders SET end_time=:end_time WHERE id=:reminder_id", end_time=end_time, reminder_id=reminder_id)
-        print("sssssssssssssssssssssss",let)
+        db_update("UPDATE reminders SET end_time = '" +end_time+ "'  WHERE id= " + str(reminder_id))
+
 
 # update reminders
 def set_reminder_notify_time(reminder_id):
-    notify_time = datetime.datetime.now()
+    notify_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # Notify time query
     print('Setting notify time for reminder with id:', reminder_id)
     global db_link
     # db = SQL(db_link)
-    db.execute("UPDATE reminders SET notify_time=:notify_time WHERE id=:reminder_id", notify_time=notify_time, reminder_id=reminder_id)
+    db_update("UPDATE reminders SET notify_time = '" +notify_time+ "' WHERE id= " + str(reminder_id))
 
 # Notifiy contacts
 def notify_reminder_contacts(timer_reminder):
@@ -614,8 +581,7 @@ def reminders_late_check():
         remaining_time = time_exp - time_now
 
         if remaining_time > datetime.timedelta(0):
-            print(str('Time is fine ' + time_now.strftime("%Y-%m-%d %H:%M:%S")))
-            print('Next timer to expire: ', closes_reminder)
+            print('Now:',time_now.strftime("%Y-%m-%d %H:%M:%S"),'Next timer to expire: ', closes_reminder)
         else:
             handle_expired_reminder(closes_reminder)
 
@@ -625,15 +591,9 @@ def reminders_late_check():
 # Runs function and calls reminder timer again
 def timer_engine():
     reminders_late_check()
-    if len(reminder_timer_array) > 0:
-        threading.Timer(5.0, timer_engine).start()
+    threading.Timer(5.0, timer_engine).start()
 
 @app.before_first_request
 def initialize():
     get_timer_reminders()
     timer_engine()
-
-# if __name__ == '__main__':
-    # app.run(debug = True)
-    # get_timer_reminders()
-    # timer_engine()
