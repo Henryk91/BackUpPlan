@@ -102,7 +102,7 @@
                             let isoDate = new Date();
                             let miliSeconds = (expireDate - isoDate);
                             let remainingTime = milisToTime(miliSeconds);
-
+                            if(remainingTime === 0) window.location.reload()
                             let remainingElement = remaining[i];
                             remainingElement.innerHTML = remainingTime;
                         }

@@ -275,7 +275,7 @@ def email_contacts(to, subject, text):
     # myobj = {'email': 'bob@mailinator.com', 'text' : 'FFs Message missing.'}
     myobj = {'from': 'mail@henryk.co.za', 'to': to, 'subject': subject, 'text': text}
     print('Email obj:', myobj)
-    # x = requests.post(url, data = myobj)
+    x = requests.post(url, data = myobj)
     #print the response text (the content of the requested file):
     print(x.text)
     print('Email sent')
