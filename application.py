@@ -8,6 +8,9 @@ from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
+
 from helpers import apology, login_required, lookup, usd
 import datetime
 
@@ -48,6 +51,11 @@ db_link = "sqlite:///findme.db"
 
 db_link = "postgres://<password>:<url>/<db>"
 db = SQL(db_link)
+
+engine = create_engine(db_link, echo=True)
+
+db = create_engine(db_link)
+# db=scoped_session(sessionmaker(bind=engine))
 
 # db = SQL("postgres://<password>:<url>/<db>")
 
@@ -160,7 +168,7 @@ def login():
 
         # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = :username",
-                          username=request.form.get("username"))
+                          username=request.form.get("username")).fetchall()
         print('rows',rows)
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
@@ -209,7 +217,7 @@ def register():
 
         # Check if user exists
         rows = db.execute("SELECT * FROM users WHERE username = :username",
-                          username=request.form.get("username"))
+                          username=request.form.get("username")).fetchall()
         if len(rows) > 0:
             return apology("Username already exists", 403)
 
@@ -252,14 +260,14 @@ for code in default_exceptions:
     app.errorhandler(code)(errorhandler)
 
 # test email function
-def test_email():
-    # https://henryk91-note.herokuapp.com/api/email
-    url = 'https://henryk91-note.herokuapp.com/api/emails'
-    # myobj = {'email': 'bob@mailinator.com', 'text' : 'FFs Message missing.'}
-    myobj = {'from': 'live@henryk.co.za', 'to': ['henry@mailinator.com', 'bob@mailinator.com'], 'subject': 'Live Switch', 'text': 'FFs Message missing.'}
-    # x = requests.post(url, data = myobj)
-    #print the response text (the content of the requested file):
-    print(x.text)
+# def test_email():
+#     # https://henryk91-note.herokuapp.com/api/email
+#     url = 'https://henryk91-note.herokuapp.com/api/emails'
+#     # myobj = {'email': 'bob@mailinator.com', 'text' : 'FFs Message missing.'}
+#     myobj = {'from': 'live@henryk.co.za', 'to': ['henry@mailinator.com', 'bob@mailinator.com'], 'subject': 'Live Switch', 'text': 'FFs Message missing.'}
+#     # x = requests.post(url, data = myobj)
+#     #print the response text (the content of the requested file):
+#     print(x.text)
 
 # test email function
 def email_contacts(to, subject, text):
@@ -275,22 +283,22 @@ def email_contacts(to, subject, text):
     print('Email sent')
 
 # Create stock
-def create_reminder(details, interval, reminder_name, contact):
-    stock_value = 1 #lookup(request.form.get("details"))
-    if stock_value:
-        print("Creating here")
-        # Did get a response from lookup
-        trade_msg =  make_trade(details, interval, reminder_name, 'create', contact)
-        if trade_msg:
-            return trade_msg
-        return "Added Reminder!"
-    else:
-        return
+# def create_reminder(details, interval, reminder_name, contact):
+#     stock_value = 1 #lookup(request.form.get("details"))
+#     if stock_value:
+#         print("Creating here")
+#         # Did get a response from lookup
+#         trade_msg =  make_trade(details, interval, reminder_name, 'create', contact)
+#         if trade_msg:
+#             return trade_msg
+#         return "Added Reminder!"
+#     else:
+#         return
 
 # Get user data
 def get_user():
     user_id = session["user_id"]
-    rows = db.execute("SELECT * FROM users WHERE id = :user_id",user_id=user_id)
+    rows = db.execute("SELECT * FROM users WHERE id = :user_id",user_id=user_id).fetchall()
     if len(rows) <= 0:
             return
     else:
@@ -298,6 +306,7 @@ def get_user():
 
 # Update user data
 def update_user(request):
+    global db
     user_id = session["user_id"]
     user_hash = generate_password_hash(request.form.get("password"))
     new_username = request.form.get("new_username")
@@ -307,7 +316,7 @@ def update_user(request):
     new_pass = request.form.get("new-password")
     new_confirm = request.form.get("new-confirm")
 
-    user_rows = db.execute("SELECT * FROM users WHERE id = :user_id",user_id=user_id)
+    user_rows = db.execute("SELECT * FROM users WHERE id = :user_id",user_id=user_id).fetchall()
 
     # Ensure username exists and password is correct
     if len(user_rows) != 1 or not check_password_hash(user_rows[0]["hash"], request.form.get("password")):
@@ -326,7 +335,11 @@ def update_user(request):
             return "Passwords don't match"
     else:
         # Updating only username
-        row = db.execute("UPDATE users SET username=:username, detail=:new_detail WHERE id=:user_id", username=new_username, detail=new_detail ,user_id=user_id)
+        details = 'sdddddddddddddddd'
+
+        # row = db.execute("UPDATE users SET username=:username, details=:details WHERE id=:user_id", username=new_username, details=details ,user_id=user_id)
+        db.execute("UPDATE users SET username=:username, details=:details WHERE id=:user_id", {"username": new_username, "details": details, "user_id": user_id})
+        db.commit()
         session["msg"] = 'Profile Updated!'
 
         return 'Profile Updated!'
@@ -338,7 +351,7 @@ def get_timer_reminders():
     global db_link
     # db = SQL(db_link)
 
-    rows = db.execute("SELECT next_expiration, id as reminder_id FROM reminders WHERE end_time IS NULL AND notify_time IS NULL")
+    rows = db.execute("SELECT next_expiration, id as reminder_id FROM reminders WHERE end_time IS NULL AND notify_time IS NULL").fetchall()
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -348,7 +361,7 @@ def get_timer_reminders():
 # get user active reminders
 def get_user_active_reminders():
     user_id = session["user_id"]
-    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND end_time IS NULL",user_id=user_id)
+    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND end_time IS NULL",user_id=user_id).fetchall()
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -359,7 +372,7 @@ def get_user_active_reminders():
 # get user reminders
 def get_user_reminders():
     user_id = session["user_id"]
-    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND interval > 0;",user_id=user_id)
+    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND interval > 0;",user_id=user_id).fetchall()
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -390,7 +403,7 @@ def create_remaining_time(rows):
 # get reminder by id with user check so user cant call any reminder
 def get_user_reminder_by_id(reminder_id):
     user_id = session["user_id"]
-    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND id = :reminder_id;",user_id=user_id, reminder_id=reminder_id)
+    rows = db.execute("SELECT * FROM reminders WHERE user_id = :user_id AND id = :reminder_id;",user_id=user_id, reminder_id=reminder_id).fetchall()
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -401,7 +414,7 @@ def get_reminder_by_id_with_sql_create(reminder_id):
     global db_link
     # db = SQL(db_link)
 
-    rows = db.execute("SELECT * FROM reminders WHERE id = :reminder_id;", reminder_id=reminder_id)
+    rows = db.execute("SELECT * FROM reminders WHERE id = " + str(reminder_id)).fetchall()
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -412,7 +425,8 @@ def get_user_by_id_with_sql_create(user_id):
     global db_link
     # db = SQL(db_link)
 
-    rows = db.execute("SELECT username FROM users WHERE id = :user_id",user_id=user_id)
+    # rows = db.execute("SELECT username FROM users WHERE id = :user_id",user_id=user_id).fetchall()
+    rows = db.execute("SELECT username FROM users WHERE id = " + str(user_id)).fetchall()
     if len(rows) <= 0:
             return [{'details': '', 'interval': 0}]
     else:
@@ -455,7 +469,7 @@ def checkin_reminder(reminder_id):
     print('Checking in on reminder:', reminder_id)
     global db_link
     # db = SQL(db_link)
-    rows = db.execute("SELECT interval, notify_time, end_time FROM reminders WHERE id = :reminder_id",reminder_id=reminder_id)
+    rows = db.execute("SELECT interval, notify_time, end_time FROM reminders WHERE id = :reminder_id",reminder_id=reminder_id).fetchall()
     if rows:
         interval = rows[0]['interval']
         notify_time = rows[0]['notify_time']
@@ -521,7 +535,7 @@ def reminder_stop_check(reminder_id):
     print('Checking if reminder has been stopped reminder:', reminder_id)
     global db_link
     # db = SQL(db_link)
-    rows = db.execute("SELECT end_time FROM reminders WHERE id = :reminder_id",reminder_id=reminder_id)
+    rows = db.execute("SELECT end_time FROM reminders WHERE id = :reminder_id",reminder_id=reminder_id).fetchall()
     if rows:
         end_time = rows[0]['end_time']
         if end_time != None:
