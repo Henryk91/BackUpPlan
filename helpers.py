@@ -61,3 +61,11 @@ def lookup(symbol):
 def usd(value):
     """Format value as USD."""
     return f"${value:,.2f}"
+
+def get_db_link():
+    """Get the link for the postgres db."""
+    try:
+        api_key = os.environ.get("DB_KEY")
+        return api_key
+    except requests.RequestException:
+        return None
