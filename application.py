@@ -591,7 +591,8 @@ def reminders_late_check():
 # Runs function and calls reminder timer again
 def timer_engine():
     reminders_late_check()
-    threading.Timer(5.0, timer_engine).start()
+    if len(reminder_timer_array) > 0:
+        threading.Timer(5.0, timer_engine).start()
 
 @app.before_first_request
 def initialize():
