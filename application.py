@@ -502,7 +502,10 @@ def reminder_timer_update(next_expiration, reminder_id, add_remove):
     print('')
     if len(reminder_timer_array) > 0:
         reminder_timer_array.sort(key = lambda x: datetime.datetime.strptime(str(x['next_expiration']), '%Y-%m-%d %H:%M:%S'))
-        reminders_late_check()
+        # reminders_late_check()
+        print('Timer array lnegth:',len(reminder_timer_array))
+        # if len(reminder_timer_array) == 1:
+        #     timer_engine()
 
 # Check if reminder has been stopped
 def reminder_stop_check(reminder_id):
@@ -563,7 +566,7 @@ def notify_reminder_contacts(timer_reminder):
         contacts = [contacts]
 
     # send notification
-    email_contacts(contacts, 'Live Switch', text)
+    email_contacts(contacts, 'BackUp Plan Alert', text)
     set_reminder_notify_time(reminder_id)
 
 # process expired reminder
@@ -594,8 +597,10 @@ def reminders_late_check():
 
 # Runs function and calls reminder timer again
 def timer_engine():
+
     reminders_late_check()
-    if len(reminder_timer_array) > 0:
+    # if len(reminder_timer_array) > 0:
+    if True:
         threading.Timer(5.0, timer_engine).start()
 
 @app.before_first_request
