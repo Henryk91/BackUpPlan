@@ -620,7 +620,7 @@ def keep_up_engine():
         threading.Timer((15.0*60), keep_up_engine).start()
 
 
-# @app.before_first_request
+@app.before_first_request
 def initialize():
     print('Starting andt initialize !!', hasInit)
     if hasInit == False:
@@ -628,5 +628,3 @@ def initialize():
         get_timer_reminders()
         timer_engine()
         keep_up_engine()
-
-initialize()
