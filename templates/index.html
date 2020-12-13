@@ -83,7 +83,7 @@
         <script>
             setTimeout(() => {
                 milisToTime = (ms) => {
-                    return new Date(ms).toISOString().substring(11,19);
+                    return new Date(Math.abs(ms)).toISOString().substring(11,19);
                 };
                 let expired = document.getElementsByClassName('expire-time');
                 let remaining = document.getElementsByClassName('remaining-time');
@@ -98,9 +98,8 @@
                         for(let i = 0; i < expired.length; i++){
                             let item = expired[i];
                             let expireDate = new Date(dateStringToIsoString(item.textContent));
-
                             let isoDate = new Date();
-                            let miliSeconds = (expireDate - isoDate);
+                            let miliSeconds = Math.abs(expireDate.getTime() - isoDate.getTime());
                             let remainingTime = milisToTime(miliSeconds);
                             if(remainingTime === 0) window.location.reload()
                             let remainingElement = remaining[i];
