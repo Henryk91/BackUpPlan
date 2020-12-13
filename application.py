@@ -620,17 +620,19 @@ def keep_up_engine():
 
 def init():
     is_first = os.environ.get('IS_FIRST')
-    if is_first == 'None':
+    print('is_first',is_first)
+    if is_first == None:
         os.environ['IS_FIRST'] = 'True'
         print('INNNNNNNNNNNIIIIIIIIIIIIIITTTTTTTTTTTTT')
         get_timer_reminders()
         timer_engine()
         keep_up_engine()
 
-@app.before_first_request
-def initialize():
-    init()
+# @app.before_first_request
+# def initialize():
+#     init()
 
+init()
 
 is_first = os.environ.get('IS_FIRST')
 
