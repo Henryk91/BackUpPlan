@@ -628,3 +628,7 @@ def initialize():
         get_timer_reminders()
         timer_engine()
         keep_up_engine()
+
+if __name__ == '__main__':
+    # Threaded option to enable multiple instances for multiple user access support
+    app.run(threaded=True, port=5000)
