@@ -45,7 +45,7 @@ def after_request(response):
 
 # app.SECRET_KEY =  "b_5#y2LF4Q8znxec]b_5#y2LF4Q8znxec]" #os.urandom(16) #
 app.config['SECRET_KEY'] = "b_5#y2LF4Q8znxec]b_5#y2LF4Q8znxec]" #
-# app.debug = True
+app.debug = True
 # Session(app)
 
 # Configure CS50 Library to use SQLite database or Postgres
@@ -618,8 +618,16 @@ def keep_up_engine():
         threading.Timer((15.0*60), keep_up_engine).start()
 
 
-@app.before_first_request
-def initialize():
+# @app.before_first_request
+# def initialize():
+#     get_timer_reminders()
+#     timer_engine()
+#     keep_up_engine()
+
+if __name__ == '__main__':
+    app.run(debug = True)
     get_timer_reminders()
     timer_engine()
     keep_up_engine()
+
+print('__name____name____name____name____name____name____name____name__',__name__)
