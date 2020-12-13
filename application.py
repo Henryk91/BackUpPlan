@@ -628,11 +628,10 @@ def init():
         timer_engine()
         keep_up_engine()
 
-# @app.before_first_request
-# def initialize():
-#     init()
+@app.before_first_request
+def initialize():
+    init()
 
-init()
 
 is_first = os.environ.get('IS_FIRST')
 
