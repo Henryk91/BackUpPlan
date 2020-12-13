@@ -603,7 +603,23 @@ def timer_engine():
     if True:
         threading.Timer(5.0, timer_engine).start()
 
+def keep_up_engine():
+
+    if len(reminder_timer_array) > 0:
+        print('Should Be KeepingUp', len(reminder_timer_array) )
+        res = requests.get('https://backup-plan.herokuapp.com')
+        #print the response text (the content of the requested file):
+        print(res.text)
+        print('')
+    else:
+        print('Should Not be Keeping up')
+        print('')
+    if True:
+        threading.Timer((15.0*60), keep_up_engine).start()
+
+
 @app.before_first_request
 def initialize():
     get_timer_reminders()
     timer_engine()
+    keep_up_engine()
