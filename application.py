@@ -53,6 +53,8 @@ db_link = "sqlite:///findme.db"
 
 db_link = "postgres://<password>:<url>/<db>"
 
+hasInit = False
+
 env_link = get_db_link()
 if env_link:
     db_link = env_link
@@ -620,9 +622,11 @@ def keep_up_engine():
 
 # @app.before_first_request
 def initialize():
-    print('Starting andt initialize !!')
-    get_timer_reminders()
-    timer_engine()
-    keep_up_engine()
+    print('Starting andt initialize !!', hasInit)
+    if hasInit == False:
+        hasInit == True
+        get_timer_reminders()
+        timer_engine()
+        keep_up_engine()
 
 initialize()
