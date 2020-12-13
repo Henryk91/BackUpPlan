@@ -44,8 +44,10 @@ def after_request(response):
 # app.config["SESSION_TYPE"] = "filesystem"
 
 # app.SECRET_KEY =  "b_5#y2LF4Q8znxec]b_5#y2LF4Q8znxec]" #os.urandom(16) #
+
+app.config['WEB_CONCURRENCY'] = 1
 app.config['SECRET_KEY'] = "b_5#y2LF4Q8znxec]b_5#y2LF4Q8znxec]" #
-app.debug = True
+app.debug = False
 # Session(app)
 
 # Configure CS50 Library to use SQLite database or Postgres
@@ -618,7 +620,11 @@ def keep_up_engine():
         threading.Timer((15.0*60), keep_up_engine).start()
 
 
-def init():
+# def init():
+
+
+@app.before_first_request
+def initialize():
     is_first = os.environ.get('IS_FIRST')
     print('is_first',is_first)
     if is_first == None:
@@ -628,11 +634,7 @@ def init():
         timer_engine()
         keep_up_engine()
 
-@app.before_first_request
-def initialize():
-    init()
-
 
 is_first = os.environ.get('IS_FIRST')
 
-print('is_first',is_first)
+print('No Load is_first',is_first)
