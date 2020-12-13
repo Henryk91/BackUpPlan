@@ -620,21 +620,22 @@ def keep_up_engine():
         threading.Timer((15.0*60), keep_up_engine).start()
 
 
-# def init():
+def init():
+    print('INNNNNNNNNNNIIIIIIIIIIIIIITTTTTTTTTTTTT')
+    get_timer_reminders()
+    timer_engine()
+    keep_up_engine()
 
 
 @app.before_first_request
 def initialize():
-    is_first = os.environ.get('IS_FIRST')
-    print('is_first',is_first)
-    if is_first == None:
-        os.environ['IS_FIRST'] = 'True'
-        print('INNNNNNNNNNNIIIIIIIIIIIIIITTTTTTTTTTTTT')
-        get_timer_reminders()
-        timer_engine()
-        keep_up_engine()
+    print('os.getpid()',os.getpid() )
 
+    is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
+    if is_gunicorn == True:
+        print('is_gunicorn',is_gunicorn)
+        if (os.getpid() % 2) == 0:
+            init()
+    else:
+        init()
 
-is_first = os.environ.get('IS_FIRST')
-
-print('No Load is_first',is_first)
