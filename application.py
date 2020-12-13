@@ -630,6 +630,16 @@ def initialize():
     init()
 
 
+is_first = os.environ.get('IS_FIRST')
+
+print('is_first',is_first)
+
+os.environ['IS_FIRST'] = 'True'
+
+
+is_first = os.environ.get('IS_FIRST')
+
+print('is_first',is_first)
 
 print('__name____name____name____name____name____name____name____name__',__name__)
 
