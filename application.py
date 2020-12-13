@@ -588,7 +588,7 @@ def reminders_late_check():
         remaining_time = time_exp - time_now
 
         if remaining_time > datetime.timedelta(0):
-            print('Now:',time_now.strftime("%Y-%m-%d %H:%M:%S"),'Next timer to expire: ', closes_reminder)
+            print(len(reminder_timer_array) ,' Now:',time_now.strftime("%Y-%m-%d %H:%M:%S"),'Next timer to expire: ', closes_reminder)
         else:
             handle_expired_reminder(closes_reminder)
 
@@ -618,8 +618,11 @@ def keep_up_engine():
         threading.Timer((15.0*60), keep_up_engine).start()
 
 
-@app.before_first_request
+# @app.before_first_request
 def initialize():
+    print('Starting andt initialize !!')
     get_timer_reminders()
     timer_engine()
     keep_up_engine()
+
+initialize()
