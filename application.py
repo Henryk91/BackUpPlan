@@ -619,7 +619,9 @@ def keep_up_engine():
 
 
 def init():
-    with app.app_context():
+    is_first = os.environ.get('IS_FIRST')
+    if is_first == 'None':
+        os.environ['IS_FIRST'] = 'True'
         print('INNNNNNNNNNNIIIIIIIIIIIIIITTTTTTTTTTTTT')
         get_timer_reminders()
         timer_engine()
