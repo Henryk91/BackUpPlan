@@ -609,7 +609,7 @@ def keep_up_engine():
         print('Should Be KeepingUp', len(reminder_timer_array) )
         res = requests.get('https://backup-plan.herokuapp.com')
         #print the response text (the content of the requested file):
-        print(res.text)
+        print('Len',len(res.text))
         print('')
     else:
         print('Should Not be Keeping up')
@@ -618,16 +618,18 @@ def keep_up_engine():
         threading.Timer((15.0*60), keep_up_engine).start()
 
 
-# @app.before_first_request
-# def initialize():
-#     get_timer_reminders()
-#     timer_engine()
-#     keep_up_engine()
+def init():
+    with app.app_context():
+        print('INNNNNNNNNNNIIIIIIIIIIIIIITTTTTTTTTTTTT')
+        get_timer_reminders()
+        timer_engine()
+        keep_up_engine()
 
-if __name__ == '__main__':
-    app.run(debug = True)
-    get_timer_reminders()
-    timer_engine()
-    keep_up_engine()
+@app.before_first_request
+def initialize():
+    init()
+
+
 
 print('__name____name____name____name____name____name____name____name__',__name__)
+
