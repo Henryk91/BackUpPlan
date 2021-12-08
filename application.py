@@ -578,7 +578,7 @@ def keep_up_engine():
 
     if len(reminder_timer_array) > 0:
         print('Should Be KeepingUp', len(reminder_timer_array) )
-        res = requests.get('https://backup.henryk91.repl.co')
+        res = requests.get('https://backup-plan.herokuapp.com')
         #print the response text (the content of the requested file):
         print('Len',len(res.text))
         print('')
