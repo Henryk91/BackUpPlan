@@ -2,25 +2,14 @@ import os
 
 import datetime;
 from cs50 import SQL
-from flask import Flask, flash, jsonify, redirect, render_template, request, session
-# from flask_session import Session
-
-from tempfile import mkdtemp
+from flask import Flask, redirect, render_template, request, session
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.dialects.postgresql import insert
-
-from helpers import apology, login_required, lookup, usd, get_db_link
-import datetime
-
+from helpers import apology, login_required, get_db_link
 import requests
-
 import threading
 
-import array
 
 reminder_timer_array = []
 
@@ -38,20 +27,14 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
-# Configure session to use filesystem (instead of signed cookies)
-# app.config["SESSION_FILE_DIR"] = mkdtemp()
-# app.config["SESSION_PERMANENT"] = False
-# app.config["SESSION_TYPE"] = "filesystem"
 
-# app.SECRET_KEY =  "b_5#y2LF4Q8znxec]b_5#y2LF4Q8znxec]" #os.urandom(16) #
+app.config['WEB_CONCURRENCY'] = 1
 app.config['SECRET_KEY'] = "b_5#y2LF4Q8znxec]b_5#y2LF4Q8znxec]" #
-# app.debug = True
+app.debug = False
 # Session(app)
 
 # Configure CS50 Library to use SQLite database or Postgres
 db_link = "sqlite:///findme.db"
-
-db_link = "postgres://<password>:<url>/<db>"
 
 env_link = get_db_link()
 if env_link:
@@ -80,7 +63,6 @@ def index():
     msg = session["msg"]
     session["msg"] = ''
     time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # time_now = datetime.datetime.strptime(time_now, '%Y-%m-%d %H:%M:%S')
 
     return render_template("index.html", reminders=reminders, message=msg, time_now=time_now)
 
@@ -118,7 +100,6 @@ def create():
                 elif msg:
                     session["msg"] = msg
                     return redirect("/")
-                    # return render_template("index.html", message=msg)
                 else:
                     return apology("Unknown Symbol")
 
@@ -274,14 +255,11 @@ for code in default_exceptions:
 # test email function
 def email_contacts(to, subject, text):
     print('About to send email to:', to)
-    # https://henryk91-note.herokuapp.com/api/email
     url = 'https://henryk91-note.herokuapp.com/api/emails'
-    # myobj = {'email': 'bob@mailinator.com', 'text' : 'FFs Message missing.'}
     myobj = {'from': 'mail@henryk.co.za', 'to': to, 'subject': subject, 'text': text}
     print('Email obj:', myobj)
     x = requests.post(url, data = myobj)
-    #print the response text (the content of the requested file):
-    print(x.text)
+
     print('Email sent')
 
 # Get user data
@@ -297,7 +275,6 @@ def get_user():
 def update_user(request):
     global db
     user_id = session["user_id"]
-    user_hash = generate_password_hash(request.form.get("password"))
     new_username = request.form.get("new_username")
 
     new_detail = request.form.get("details")
@@ -469,10 +446,6 @@ def filter_remove(timer_reminder_array, attribute, filter_value):
     new_array = []
     for timer_reminder in timer_reminder_array:
         if str(timer_reminder[attribute]) != str(filter_value):
-            # print(attribute)
-            # print(filter_value)
-            # print(timer_reminder[attribute])
-            # print(timer_reminder[attribute] != filter_value)
             new_array = new_array + [timer_reminder]
     return new_array
 
@@ -502,7 +475,8 @@ def reminder_timer_update(next_expiration, reminder_id, add_remove):
     print('')
     if len(reminder_timer_array) > 0:
         reminder_timer_array.sort(key = lambda x: datetime.datetime.strptime(str(x['next_expiration']), '%Y-%m-%d %H:%M:%S'))
-        reminders_late_check()
+
+        print('Timer array length:',len(reminder_timer_array))
 
 # Check if reminder has been stopped
 def reminder_stop_check(reminder_id):
@@ -563,7 +537,7 @@ def notify_reminder_contacts(timer_reminder):
         contacts = [contacts]
 
     # send notification
-    email_contacts(contacts, 'Live Switch', text)
+    email_contacts(contacts, 'BackUp Plan Alert', text)
     set_reminder_notify_time(reminder_id)
 
 # process expired reminder
@@ -585,7 +559,7 @@ def reminders_late_check():
         remaining_time = time_exp - time_now
 
         if remaining_time > datetime.timedelta(0):
-            print('Now:',time_now.strftime("%Y-%m-%d %H:%M:%S"),'Next timer to expire: ', closes_reminder)
+            print(len(reminder_timer_array) ,' Now:',time_now.strftime("%Y-%m-%d %H:%M:%S"),'Next timer to expire: ', closes_reminder)
         else:
             handle_expired_reminder(closes_reminder)
 
@@ -594,11 +568,44 @@ def reminders_late_check():
 
 # Runs function and calls reminder timer again
 def timer_engine():
+
     reminders_late_check()
-    if len(reminder_timer_array) > 0:
+    # if len(reminder_timer_array) > 0:
+    if True:
         threading.Timer(5.0, timer_engine).start()
+
+def keep_up_engine():
+
+    if len(reminder_timer_array) > 0:
+        print('Should Be KeepingUp', len(reminder_timer_array) )
+        res = requests.get('https://backup.henryk91.repl.co')
+        #print the response text (the content of the requested file):
+        print('Len',len(res.text))
+        print('')
+    else:
+        print('Should Not be Keeping up')
+        print('')
+    if True:
+        threading.Timer((15.0*60), keep_up_engine).start()
+
+
+def init():
+    get_timer_reminders()
+    timer_engine()
+    keep_up_engine()
+
 
 @app.before_first_request
 def initialize():
-    get_timer_reminders()
-    timer_engine()
+    print('os.getpid()',os.getpid() )
+
+    is_gunicorn = "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
+    if is_gunicorn == True:
+        print('is_gunicorn',is_gunicorn)
+        if (os.getpid() % 2) == 0:
+            init()
+    else:
+        init()
+
+if __name__ == '__main__':
+	app.run(debug=True, host='0.0.0.0')
